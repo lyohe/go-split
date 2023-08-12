@@ -7,6 +7,16 @@ import (
 	"os"
 )
 
+var (
+	suffixLength int
+	linesCount   int
+)
+
+func init() {
+	flag.IntVar(&suffixLength, "a", 3, "use suffixes of length N (default 3)")
+	flag.IntVar(&linesCount, "l", 1000, "put N lines/records per output file")
+}
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -47,7 +57,7 @@ func main() {
 	}
 
 	// 入力を []string として分割する
-	splitText, err := linesSplit(string(input), 2)
+	splitText, err := linesSplit(string(input), linesCount)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "split: %v\n", err)
 		os.Exit(1)
@@ -56,7 +66,7 @@ func main() {
 	// 分割した文字列をファイルに書き込む
 	suffix := ""
 	for _, s := range splitText {
-		suffix, err = getNextAlphabeticSuffix(suffix, 3)
+		suffix, err = getNextAlphabeticSuffix(suffix, suffixLength)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "split: %v\n", err)
 			os.Exit(1)
