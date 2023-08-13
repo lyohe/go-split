@@ -1,7 +1,7 @@
 all: split.out
 
 # 実行可能ファイルの生成
-split.out: main.go split.go suffix.go usage.go
+split.out: main.go split.go suffix.go usage.go convert.go
 	go build -o split.out
 
 # クリーンアップ

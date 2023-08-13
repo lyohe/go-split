@@ -37,3 +37,35 @@ func linesSplit(text string, n int) ([]string, error) {
 
 	return lines, nil
 }
+
+func bytesSplit(bytes []byte, n int) ([]string, error) {
+	if n < 1 {
+		return nil, fmt.Errorf("illegal byte count") // TODO: error message
+	}
+
+	if bytes == nil {
+		return nil, fmt.Errorf("empty bytes") // TODO: error message
+	}
+
+	length := len(bytes)
+	if length <= int(n) {
+		return []string{string(bytes)}, nil
+	}
+
+	var lines []string
+	line := ""
+	count := 0
+	for i, b := range bytes {
+		if count < n {
+			line = line + string(b)
+			count++
+		}
+		if count == n || i == length-1 {
+			lines = append(lines, line)
+			line = ""
+			count = 0
+		}
+	}
+
+	return lines, nil
+}

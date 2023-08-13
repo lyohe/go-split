@@ -1,6 +1,7 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -64,6 +65,67 @@ func TestLinesSplit(t *testing.T) {
 				if line != tt.want[i] {
 					t.Errorf("lines_split() got[%d] = %v, want %v", i, line, tt.want[i])
 				}
+			}
+		})
+	}
+}
+
+func TestBytesSplit(t *testing.T) {
+	tests := []struct {
+		name    string
+		bytes   []byte
+		n       int
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:    "empty bytes",
+			bytes:   nil,
+			n:       2,
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "illegal byte count",
+			bytes:   []byte("test"),
+			n:       0,
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "split into single group",
+			bytes:   []byte("test"),
+			n:       10,
+			want:    []string{"test"},
+			wantErr: false,
+		},
+		{
+			name:    "split multiple bytes",
+			bytes:   []byte("testtest"),
+			n:       4,
+			want:    []string{"test", "test"},
+			wantErr: false,
+		},
+		{
+			name:    "split with remaining bytes",
+			bytes:   []byte("testtes"),
+			n:       4,
+			want:    []string{"test", "tes"},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := bytesSplit(tt.bytes, tt.n)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("bytesSplit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("bytesSplit() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -7,68 +7,115 @@ import (
 	"os"
 )
 
-var (
-	suffixLength int
-	linesCount   int
+type SplitType int
+
+const (
+	SplitByLines SplitType = iota
+	SplitByBytes
 )
 
-func init() {
-	flag.IntVar(&suffixLength, "a", 3, "use suffixes of length N (default 3)")
-	flag.IntVar(&linesCount, "l", 1000, "put N lines/records per output file")
+type SplitConfig struct {
+	SplitType    SplitType
+	SuffixLength int
+	LinesCount   int
+	BytesCount   int
 }
 
-func main() {
-	flag.Usage = usage
+func ParseFlags() *SplitConfig {
+	var parseErr error
+
+	suffixLength := flag.Int("a", 3, "use suffixes of length N (default 3)")
+	linesCount := flag.Int("l", 1000, "put N lines/records per output file")
+	bytesCount := flag.String("b", "", "Specify bytes per file with optional multiplier (k, K, m, M, g, G)")
+
 	flag.Parse()
 
-	// 引数が正しくない場合は usage を表示して終了
-	if flag.NArg() > 1 {
-		fmt.Fprintf(os.Stderr, "split: too many arguments\n")
+	config := &SplitConfig{
+		LinesCount:   *linesCount,
+		SuffixLength: *suffixLength,
+	}
+	if *bytesCount != "" {
+		config.SplitType = SplitByBytes
+		config.BytesCount, parseErr = convertByteSize(*bytesCount)
+	} else {
+		config.SplitType = SplitByLines
+	}
+
+	if parseErr != nil {
+		fmt.Fprintf(os.Stderr, "split: %v\n", parseErr)
 		flag.Usage()
 		os.Exit(2)
 	}
 
+	/*
+		// 引数が正しくない場合は usage を表示して終了
+		if flag.NArg() > 1 {
+			fmt.Fprintf(os.Stderr, "split: too many arguments\n")
+			flag.Usage()
+			os.Exit(2)
+		}
+	*/
+
+	return config
+}
+
+func init() {
+	flag.Usage = usage
+}
+
+func main() {
+	config := ParseFlags()
+
 	var input []byte
-	var err error
+	var inputErr error
 
 	// 引数でファイル入力を受け取る
 	if flag.NArg() == 1 {
-		file, err := os.Open(flag.Arg(0))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", err)
+		file, inputErr := os.Open(flag.Arg(0))
+		if inputErr != nil {
+			fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
 			os.Exit(1)
 		}
 		defer file.Close()
 
-		input, err = io.ReadAll(file)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", err)
+		input, inputErr = io.ReadAll(file)
+		if inputErr != nil {
+			fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
 			os.Exit(1)
 		}
 	}
 
 	// ファイル入力がない場合は標準入力を受け取る
 	if flag.NArg() < 1 {
-		input, err = io.ReadAll(os.Stdin)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", err)
+		input, inputErr = io.ReadAll(os.Stdin)
+		if inputErr != nil {
+			fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
 			os.Exit(1)
 		}
 	}
 
+	var splitText []string
+	var splitErr error
+
 	// 入力を []string として分割する
-	splitText, err := linesSplit(string(input), linesCount)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "split: %v\n", err)
+	switch config.SplitType {
+	case SplitByLines:
+		splitText, splitErr = linesSplit(string(input), config.LinesCount)
+	case SplitByBytes:
+		splitText, splitErr = bytesSplit(input, config.BytesCount)
+	}
+	if splitErr != nil {
+		fmt.Fprintf(os.Stderr, "split: %v\n", splitErr)
 		os.Exit(1)
 	}
 
 	// 分割した文字列をファイルに書き込む
 	suffix := ""
+	var suffixErr error
 	for _, s := range splitText {
-		suffix, err = getNextAlphabeticSuffix(suffix, suffixLength)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", err)
+		suffix, suffixErr = getNextAlphabeticSuffix(suffix, config.SuffixLength)
+		if suffixErr != nil {
+			fmt.Fprintf(os.Stderr, "split: %v\n", suffixErr)
 			os.Exit(1)
 		}
 		f, err := os.Create(suffix)
