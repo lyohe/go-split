@@ -76,3 +76,64 @@ func TestGetNextAlphabeticSuffix(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNextNumericSuffix(t *testing.T) {
+	tests := []struct {
+		name      string
+		suffix    string
+		length    int
+		expected  string
+		expectErr bool
+	}{
+		{
+			name:      "empty suffix",
+			suffix:    "",
+			length:    3,
+			expected:  "x00",
+			expectErr: false,
+		},
+		{
+			name:      "increase digit",
+			suffix:    "x09",
+			length:    3,
+			expected:  "x10",
+			expectErr: false,
+		},
+		{
+			name:      "rollover to x00",
+			suffix:    "x99",
+			length:    3,
+			expected:  "",
+			expectErr: true,
+		},
+		{
+			name:      "illegal suffix length",
+			suffix:    "x9",
+			length:    3,
+			expected:  "",
+			expectErr: true,
+		},
+		{
+			name:      "illegal character in suffix",
+			suffix:    "xA9",
+			length:    3,
+			expected:  "",
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := getNextNumericSuffix(tt.suffix, tt.length)
+			if err != nil && !tt.expectErr {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if err == nil && tt.expectErr {
+				t.Fatal("expected an error, but got none")
+			}
+			if result != tt.expected {
+				t.Fatalf("expected %q, but got %q", tt.expected, result)
+			}
+		})
+	}
+}

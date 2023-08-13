@@ -8,14 +8,21 @@ import (
 )
 
 type SplitType int
+type SuffixType int
 
 const (
 	SplitByLines SplitType = iota
 	SplitByBytes
 )
 
+const (
+	Alphabetic SuffixType = iota
+	Numeric
+)
+
 type SplitConfig struct {
 	SplitType    SplitType
+	SuffixType   SuffixType
 	SuffixLength int
 	LinesCount   int
 	BytesCount   int
@@ -27,7 +34,7 @@ func ParseFlags() *SplitConfig {
 	suffixLength := flag.Int("a", 3, "use suffixes of length N (default 3)")
 	linesCount := flag.Int("l", 1000, "put N lines/records per output file")
 	bytesCount := flag.String("b", "", "Specify bytes per file with optional multiplier (k, K, m, M, g, G)")
-
+	useNumericSuffix := flag.Bool("d", false, "use numeric suffixes instead of alphabetic")
 	flag.Parse()
 
 	config := &SplitConfig{
@@ -47,6 +54,9 @@ func ParseFlags() *SplitConfig {
 		os.Exit(2)
 	}
 
+	if *useNumericSuffix {
+		config.SuffixType = Numeric
+	}
 	/*
 		// 引数が正しくない場合は usage を表示して終了
 		if flag.NArg() > 1 {
@@ -113,7 +123,7 @@ func main() {
 	suffix := ""
 	var suffixErr error
 	for _, s := range splitText {
-		suffix, suffixErr = getNextAlphabeticSuffix(suffix, config.SuffixLength)
+		suffix, suffixErr = getNextSuffix(suffix, config)
 		if suffixErr != nil {
 			fmt.Fprintf(os.Stderr, "split: %v\n", suffixErr)
 			os.Exit(1)
