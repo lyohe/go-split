@@ -13,6 +13,7 @@ type SuffixType int
 const (
 	SplitByLines SplitType = iota
 	SplitByBytes
+	SplitByChunks
 )
 
 const (
@@ -26,6 +27,7 @@ type SplitConfig struct {
 	SuffixLength int
 	LinesCount   int
 	BytesCount   int
+	ChunksCount  int
 }
 
 func ParseFlags() *SplitConfig {
@@ -34,6 +36,7 @@ func ParseFlags() *SplitConfig {
 	suffixLength := flag.Int("a", 3, "use suffixes of length N (default 3)")
 	linesCount := flag.Int("l", 1000, "put N lines/records per output file")
 	bytesCount := flag.String("b", "", "Specify bytes per file with optional multiplier (k, K, m, M, g, G)")
+	chunksCount := flag.Int("n", 0, "put N output files")
 	useNumericSuffix := flag.Bool("d", false, "use numeric suffixes instead of alphabetic")
 	flag.Parse()
 
@@ -44,6 +47,9 @@ func ParseFlags() *SplitConfig {
 	if *bytesCount != "" {
 		config.SplitType = SplitByBytes
 		config.BytesCount, parseErr = convertByteSize(*bytesCount)
+	} else if *chunksCount != 0 {
+		config.SplitType = SplitByChunks
+		config.ChunksCount = *chunksCount
 	} else {
 		config.SplitType = SplitByLines
 	}
@@ -113,6 +119,8 @@ func main() {
 		splitText, splitErr = linesSplit(string(input), config.LinesCount)
 	case SplitByBytes:
 		splitText, splitErr = bytesSplit(input, config.BytesCount)
+	case SplitByChunks:
+		splitText, splitErr = chunksSplit(input, config.ChunksCount)
 	}
 	if splitErr != nil {
 		fmt.Fprintf(os.Stderr, "split: %v\n", splitErr)

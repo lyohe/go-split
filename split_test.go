@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -128,5 +129,57 @@ func TestBytesSplit(t *testing.T) {
 				t.Errorf("bytesSplit() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestChunksSplit(t *testing.T) {
+	tests := []struct {
+		input  []byte
+		n      int
+		output []string
+		err    error
+	}{
+		{
+			input:  []byte("1234567890"),
+			n:      1,
+			output: []string{"1234567890"},
+		},
+		{
+			input:  []byte("1234567890"),
+			n:      2,
+			output: []string{"12345", "67890"},
+		},
+		{
+			input:  []byte("1234567890"),
+			n:      3,
+			output: []string{"1234", "5678", "90"},
+		},
+		{
+			input:  []byte("1234567890"),
+			n:      10,
+			output: []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"},
+		},
+		{
+			input: []byte("1234567890"),
+			n:     11,
+			err:   fmt.Errorf("can't split into more than 10 files"), // Expected error
+		},
+		{
+			input: []byte("1234567890"),
+			n:     0,
+			err:   fmt.Errorf("illegal chunk count"), // Expected error
+		},
+		{
+			input: nil,
+			n:     2,
+			err:   fmt.Errorf("empty text"), // Expected error
+		},
+	}
+
+	for _, tt := range tests {
+		result, err := chunksSplit(tt.input, tt.n)
+		if !reflect.DeepEqual(result, tt.output) || (err != nil && tt.err != nil && err.Error() != tt.err.Error()) {
+			t.Errorf("expected %v and %v; got %v and %v", tt.output, tt.err, result, err)
+		}
 	}
 }

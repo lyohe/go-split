@@ -69,3 +69,46 @@ func bytesSplit(bytes []byte, n int) ([]string, error) {
 
 	return lines, nil
 }
+
+func chunksSplit(bytes []byte, n int) ([]string, error) {
+	if n <= 0 {
+		return nil, fmt.Errorf("illegal chunk count") // TODO: error message
+	}
+
+	if n == 1 {
+		return []string{string(bytes)}, nil
+	}
+
+	if bytes == nil {
+		return nil, fmt.Errorf("empty text") // TODO: error message
+	}
+
+	length := len(bytes)
+	if length < n {
+		return nil, fmt.Errorf("can't split into more than %d files", length)
+	}
+
+	var bytesPerChunk int
+	if length%n == 0 {
+		bytesPerChunk = length / n
+	} else {
+		bytesPerChunk = length/n + 1
+	}
+
+	var chunks []string
+	text := ""
+	count := 0
+	for i, b := range bytes {
+		if count < bytesPerChunk {
+			text = text + string(b)
+			count++
+		}
+		if count == bytesPerChunk || i == length-1 {
+			chunks = append(chunks, text)
+			text = ""
+			count = 0
+		}
+	}
+
+	return chunks, nil
+}
