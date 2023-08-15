@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
 
 func main() {
@@ -61,31 +62,40 @@ func main() {
 	// 分割した文字列をファイルに書き込む
 	suffix := ""
 	var suffixErr error
+
+	var wg sync.WaitGroup
 	for _, s := range splitText {
 		suffix, suffixErr = getNextSuffix(suffix, config)
 		if suffixErr != nil {
 			fmt.Fprintf(os.Stderr, "split: %v\n", suffixErr)
 			os.Exit(1)
 		}
-		f, err := os.Create(suffix)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", err)
-			os.Exit(1)
-		}
-		defer func() {
-			if err := f.Close(); err != nil {
+
+		wg.Add(1)
+		go func(text, suffix string) {
+			defer wg.Done()
+
+			f, err := os.Create(suffix)
+			if err != nil {
 				fmt.Fprintf(os.Stderr, "split: %v\n", err)
 				os.Exit(1)
 			}
-			f.Close()
-		}()
+			defer func() {
+				if err := f.Close(); err != nil {
+					fmt.Fprintf(os.Stderr, "split: %v\n", err)
+					os.Exit(1)
+				}
+				f.Close()
+			}()
 
-		_, err = f.WriteString(s)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", err)
-			os.Exit(1)
-		}
+			_, err = f.WriteString(text)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "split: %v\n", err)
+				os.Exit(1)
+			}
+		}(s, suffix)
 	}
+	wg.Wait()
 
 	os.Exit(0)
 }
