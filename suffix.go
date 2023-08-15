@@ -9,20 +9,19 @@ import (
 func getNextSuffix(suffix string, config *SplitConfig) (string, error) {
 	switch config.SuffixType {
 	case Alphabetic:
-		return getNextAlphabeticSuffix(suffix, config.SuffixLength)
+		return getNextAlphabeticSuffix(config.Prefix, suffix, config.SuffixLength)
 	case Numeric:
-		return getNextNumericSuffix(suffix, config.SuffixLength)
+		return getNextNumericSuffix(config.Prefix, suffix, config.SuffixLength)
 	}
 	return "", fmt.Errorf("illegal suffix type")
 }
 
-func getNextAlphabeticSuffix(suffix string, length int) (string, error) {
-	const baseSuffix = "x"
-	if length < 1 || (len(suffix) != length && suffix != "") {
+func getNextAlphabeticSuffix(prefix string, suffix string, length int) (string, error) {
+	if length < 1 || (len(suffix)-len(prefix)+1 != length && suffix != "") {
 		return "", fmt.Errorf("illegal suffix length")
 	}
 
-	if suffix == baseSuffix+strings.Repeat("z", length-1) {
+	if suffix == prefix+strings.Repeat("z", length-1) {
 		return "", fmt.Errorf("too many files")
 	}
 
@@ -33,7 +32,7 @@ func getNextAlphabeticSuffix(suffix string, length int) (string, error) {
 	}
 
 	if suffix == "" {
-		return baseSuffix + strings.Repeat("a", length-1), nil
+		return prefix + strings.Repeat("a", length-1), nil
 	}
 
 	chars := []rune(suffix)
@@ -47,13 +46,12 @@ func getNextAlphabeticSuffix(suffix string, length int) (string, error) {
 	return string(chars), nil
 }
 
-func getNextNumericSuffix(suffix string, length int) (string, error) {
-	const baseSuffix = "x"
-	if length < 1 || (len(suffix) != length && suffix != "") {
+func getNextNumericSuffix(prefix string, suffix string, length int) (string, error) {
+	if length < 1 || (len(suffix)-len(prefix)+1 != length && suffix != "") {
 		return "", fmt.Errorf("illegal suffix length")
 	}
 
-	if suffix == baseSuffix+strings.Repeat("9", length-1) {
+	if suffix == prefix+strings.Repeat("9", length-1) {
 		return "", fmt.Errorf("too many files")
 	}
 
@@ -64,7 +62,7 @@ func getNextNumericSuffix(suffix string, length int) (string, error) {
 	}
 
 	if suffix == "" {
-		return baseSuffix + strings.Repeat("0", length-1), nil
+		return prefix + strings.Repeat("0", length-1), nil
 	}
 
 	chars := []rune(suffix)

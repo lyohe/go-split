@@ -65,7 +65,7 @@ func TestGetNextAlphabeticSuffix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getNextAlphabeticSuffix(tt.suffix, tt.length)
+			got, err := getNextAlphabeticSuffix("x", tt.suffix, tt.length)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getNextAlphabeticSuffix() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -124,7 +124,7 @@ func TestGetNextNumericSuffix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := getNextNumericSuffix(tt.suffix, tt.length)
+			result, err := getNextNumericSuffix("x", tt.suffix, tt.length)
 			if err != nil && !tt.expectErr {
 				t.Fatalf("unexpected error: %v", err)
 			}
