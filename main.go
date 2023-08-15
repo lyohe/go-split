@@ -1,69 +1,45 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"sync"
 )
 
-func main() {
-	config, fs, parseErr := ParseFlags()
-	if parseErr != nil {
-		fmt.Fprintf(os.Stderr, "split: %s\n", parseErr.Error())
-		os.Exit(2)
-	}
-
-	var input []byte
-	var inputErr error
-
-	// 引数でファイル入力を受け取る
+func readInput(fs *flag.FlagSet) ([]byte, error) {
 	if fs.NArg() >= 1 {
-		file, inputErr := os.Open(fs.Arg(0))
-		if inputErr != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
-			os.Exit(1)
+		file, err := os.Open(fs.Arg(0))
+		if err != nil {
+			return nil, err
 		}
 		defer file.Close()
 
-		input, inputErr = io.ReadAll(file)
-		if inputErr != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
-			os.Exit(1)
-		}
+		return io.ReadAll(file)
 	}
 
-	// ファイル入力がない場合は標準入力を受け取る
-	if fs.NArg() < 1 {
-		input, inputErr = io.ReadAll(os.Stdin)
-		if inputErr != nil {
-			fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
-			os.Exit(1)
-		}
-	}
+	return io.ReadAll(os.Stdin)
+}
 
-	var splitText []string
-	var splitErr error
-
-	// 入力を []string として分割する
+func splitInput(input []byte, config *SplitConfig) ([]string, error) {
 	switch config.SplitType {
 	case SplitByLines:
-		splitText, splitErr = linesSplit(string(input), config.LinesCount)
+		return linesSplit(string(input), config.LinesCount)
 	case SplitByBytes:
-		splitText, splitErr = bytesSplit(input, config.BytesCount)
+		return bytesSplit(input, config.BytesCount)
 	case SplitByChunks:
-		splitText, splitErr = chunksSplit(input, config.ChunksCount)
+		return chunksSplit(input, config.ChunksCount)
+	default:
+		return nil, fmt.Errorf("unknown split type")
 	}
-	if splitErr != nil {
-		fmt.Fprintf(os.Stderr, "split: %v\n", splitErr)
-		os.Exit(1)
-	}
+}
 
-	// 分割した文字列をファイルに書き込む
-	suffix := ""
+func writeToFile(splitText []string, config *SplitConfig) {
+	var wg sync.WaitGroup
+	var suffix string
 	var suffixErr error
 
-	var wg sync.WaitGroup
 	for _, s := range splitText {
 		suffix, suffixErr = getNextSuffix(suffix, config)
 		if suffixErr != nil {
@@ -72,23 +48,17 @@ func main() {
 		}
 
 		wg.Add(1)
-		go func(text, suffix string) {
+		go func(text, currentSuffix string) {
 			defer wg.Done()
 
-			f, err := os.Create(suffix)
+			file, err := os.Create(currentSuffix)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "split: %v\n", err)
 				os.Exit(1)
 			}
-			defer func() {
-				if err := f.Close(); err != nil {
-					fmt.Fprintf(os.Stderr, "split: %v\n", err)
-					os.Exit(1)
-				}
-				f.Close()
-			}()
+			defer file.Close()
 
-			_, err = f.WriteString(text)
+			_, err = file.WriteString(text)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "split: %v\n", err)
 				os.Exit(1)
@@ -96,6 +66,26 @@ func main() {
 		}(s, suffix)
 	}
 	wg.Wait()
+}
 
-	os.Exit(0)
+func main() {
+	config, fs, parseErr := ParseFlags()
+	if parseErr != nil {
+		fmt.Fprintf(os.Stderr, "split: %s\n", parseErr.Error())
+		os.Exit(2)
+	}
+
+	input, inputErr := readInput(fs)
+	if inputErr != nil {
+		fmt.Fprintf(os.Stderr, "split: %v\n", inputErr)
+		os.Exit(1)
+	}
+
+	splitText, splitErr := splitInput(input, config)
+	if splitErr != nil {
+		fmt.Fprintf(os.Stderr, "split: %v\n", splitErr)
+		os.Exit(1)
+	}
+
+	writeToFile(splitText, config)
 }

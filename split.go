@@ -23,12 +23,12 @@ func linesSplit(text string, n int) ([]string, error) {
 	var lines []string
 	line := ""
 	count := 0
-	for _, s := range splitLines {
+	for i, s := range splitLines {
 		if count < n {
 			line = line + s + "\n"
 			count++
 		}
-		if count == n || s == splitLines[length-1] {
+		if count == n || i == length-1 {
 			lines = append(lines, line)
 			line = ""
 			count = 0
