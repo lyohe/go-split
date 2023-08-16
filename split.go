@@ -7,11 +7,11 @@ import (
 
 func linesSplit(text string, n int) ([]string, error) {
 	if n < 1 {
-		return nil, fmt.Errorf("illegal line count") // TODO: error message
+		return nil, fmt.Errorf("illegal line count")
 	}
 
 	if text == "" {
-		return nil, fmt.Errorf("empty text") // TODO: error message
+		return nil, fmt.Errorf("empty text")
 	}
 
 	splitLines := strings.Split(text, "\n")
@@ -40,11 +40,11 @@ func linesSplit(text string, n int) ([]string, error) {
 
 func bytesSplit(bytes []byte, n int) ([]string, error) {
 	if n < 1 {
-		return nil, fmt.Errorf("illegal byte count") // TODO: error message
+		return nil, fmt.Errorf("illegal byte count")
 	}
 
 	if bytes == nil {
-		return nil, fmt.Errorf("empty bytes") // TODO: error message
+		return nil, fmt.Errorf("empty bytes")
 	}
 
 	length := len(bytes)
@@ -72,7 +72,7 @@ func bytesSplit(bytes []byte, n int) ([]string, error) {
 
 func chunksSplit(bytes []byte, n int) ([]string, error) {
 	if n <= 0 {
-		return nil, fmt.Errorf("illegal chunk count") // TODO: error message
+		return nil, fmt.Errorf("illegal chunk count")
 	}
 
 	if n == 1 {
@@ -80,7 +80,7 @@ func chunksSplit(bytes []byte, n int) ([]string, error) {
 	}
 
 	if bytes == nil {
-		return nil, fmt.Errorf("empty text") // TODO: error message
+		return nil, fmt.Errorf("empty text")
 	}
 
 	length := len(bytes)
