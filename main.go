@@ -12,7 +12,7 @@ func readInput(fs *flag.FlagSet) ([]byte, error) {
 	if fs.NArg() >= 1 {
 		file, err := os.Open(fs.Arg(0))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: No such file or directory", fs.Arg(0))
 		}
 		defer file.Close()
 
@@ -71,7 +71,7 @@ func writeToFile(splitText []string, config *SplitConfig) {
 func main() {
 	config, fs, parseErr := ParseFlags()
 	if parseErr != nil {
-		fmt.Fprintf(os.Stderr, "split: %s\n", parseErr.Error())
+		fmt.Fprintf(os.Stderr, "split: %v\n", parseErr)
 		os.Exit(2)
 	}
 
