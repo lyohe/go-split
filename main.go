@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -9,17 +11,26 @@ import (
 )
 
 func readInput(fs *flag.FlagSet) ([]byte, error) {
+	var r io.Reader
+
 	if fs.NArg() >= 1 {
 		file, err := os.Open(fs.Arg(0))
 		if err != nil {
 			return nil, fmt.Errorf("%s: No such file or directory", fs.Arg(0))
 		}
 		defer file.Close()
-
-		return io.ReadAll(file)
+		r = file
+	} else {
+		r = os.Stdin
 	}
 
-	return io.ReadAll(os.Stdin)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, bufio.NewReader(r))
+	if err != nil {
+		return nil, fmt.Errorf("error while reading input: %v", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 func splitInput(input []byte, config *SplitConfig) ([]string, error) {
