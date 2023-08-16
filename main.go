@@ -13,7 +13,7 @@ import (
 func readInput(fs *flag.FlagSet) ([]byte, error) {
 	var r io.Reader
 
-	if fs.NArg() >= 1 {
+	if fs.NArg() >= 1 && fs.Arg(0) != "-" {
 		file, err := os.Open(fs.Arg(0))
 		if err != nil {
 			return nil, fmt.Errorf("%s: No such file or directory", fs.Arg(0))
