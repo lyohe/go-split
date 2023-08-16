@@ -28,7 +28,7 @@ func linesSplit(text string, n int) ([]string, error) {
 			line = line + s + "\n"
 			count++
 		}
-		if count == n || i == length-1 {
+		if (count == n || i == length-1) && line != "" && line != "\n" {
 			lines = append(lines, line)
 			line = ""
 			count = 0
@@ -60,7 +60,7 @@ func bytesSplit(bytes []byte, n int) ([]string, error) {
 			line = line + string(b)
 			count++
 		}
-		if count == n || i == length-1 {
+		if (count == n || i == length-1) && line != "" && line != "\n" {
 			lines = append(lines, line)
 			line = ""
 			count = 0
@@ -103,7 +103,7 @@ func chunksSplit(bytes []byte, n int) ([]string, error) {
 			text = text + string(b)
 			count++
 		}
-		if count == bytesPerChunk || i == length-1 {
+		if (count == bytesPerChunk || i == length-1) && text != "" && text != "\n" {
 			chunks = append(chunks, text)
 			text = ""
 			count = 0
