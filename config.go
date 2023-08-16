@@ -21,6 +21,15 @@ const (
 	Numeric
 )
 
+const (
+	DEFAULT_SPLIT_TYPE    = SplitByLines
+	DEFAULT_PREFIX        = "x"
+	DEFAULT_SUFFIX_LENGTH = 3
+	DEFAULT_LINES_COUNT   = 1000
+	DEFAULT_BYTES_COUNT   = ""
+	DEFAULT_CHUNKS_COUNT  = 0
+)
+
 type SplitConfig struct {
 	SplitType    SplitType
 	SuffixType   SuffixType
@@ -37,14 +46,13 @@ func usage() {
 
 func ParseFlags() (*SplitConfig, *flag.FlagSet, error) {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-
 	fs.Usage = usage
 	fs.SetOutput(io.Discard)
 
-	suffixLength := fs.Int("a", 3, "")
-	linesCount := fs.Int("l", 1000, "")
-	bytesCount := fs.String("b", "", "")
-	chunksCount := fs.Int("n", 0, "")
+	suffixLength := fs.Int("a", DEFAULT_SUFFIX_LENGTH, "")
+	linesCount := fs.Int("l", DEFAULT_LINES_COUNT, "")
+	bytesCount := fs.String("b", DEFAULT_BYTES_COUNT, "")
+	chunksCount := fs.Int("n", DEFAULT_CHUNKS_COUNT, "")
 	useNumericSuffix := fs.Bool("d", false, "")
 
 	err := fs.Parse(os.Args[1:])
@@ -55,33 +63,39 @@ func ParseFlags() (*SplitConfig, *flag.FlagSet, error) {
 		return nil, nil, fmt.Errorf("too many arguments")
 	}
 
+	setFlags := make(map[string]bool)
+	fs.Visit(func(f *flag.Flag) { setFlags[f.Name] = true })
+	if setFlags["l"] && setFlags["b"] || setFlags["l"] && setFlags["n"] || setFlags["b"] && setFlags["n"] {
+		fs.Usage()
+		return nil, nil, fmt.Errorf("multiple split options selected")
+	}
+
 	var prefix string
 	if flag.NArg() == 2 {
 		prefix = fs.Arg(1)
 	} else {
-		prefix = "x"
+		prefix = DEFAULT_PREFIX
 	}
 
 	config := &SplitConfig{
 		Prefix:       prefix,
+		SplitType:    DEFAULT_SPLIT_TYPE,
 		SuffixLength: *suffixLength,
 		LinesCount:   *linesCount,
 	}
 
-	var parseErr error
-
-	if *bytesCount != "" {
+	if setFlags["b"] {
 		config.SplitType = SplitByBytes
-		config.BytesCount, parseErr = convertByteSize(*bytesCount)
-	} else if *chunksCount != 0 {
+
+		convertedBytesCount, convertErr := convertByteSize(*bytesCount)
+		if convertErr != nil {
+			return nil, nil, convertErr
+		}
+		config.BytesCount = convertedBytesCount
+	}
+	if setFlags["n"] {
 		config.SplitType = SplitByChunks
 		config.ChunksCount = *chunksCount
-	} else {
-		config.SplitType = SplitByLines
-	}
-
-	if parseErr != nil {
-		return nil, nil, parseErr
 	}
 
 	if *useNumericSuffix {
